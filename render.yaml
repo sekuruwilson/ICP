@@ -23,7 +23,6 @@ services:
   # Frontend service
   - type: web
     name: icp-frontend
-    plan: free
     env: static
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/dist
