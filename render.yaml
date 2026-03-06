@@ -24,7 +24,7 @@ services:
     name: icp-frontend
     env: static
     buildCommand: cd client && npm install && npm run build
-    publishPath: client/dist
+    staticPublishPath: client/dist
     envVars:
       - key: VITE_API_URL
         value: https://icp-backend.onrender.com/api/
