@@ -2,6 +2,7 @@ services:
   # Backend service
   - type: web
     name: icp-backend
+    plan: free
     env: python
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && daphne -b 0.0.0.0 -p $PORT core.asgi:application
@@ -22,6 +23,7 @@ services:
   # Frontend service
   - type: web
     name: icp-frontend
+    plan: free
     env: static
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/dist
