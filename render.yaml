@@ -4,10 +4,11 @@ services:
     name: icp-backend
     plan: free
     env: python
-    pythonVersion: 3.11.0
     buildCommand: pip install -r backend/requirements.txt && cd backend && python manage.py collectstatic --no-input
     startCommand: cd backend && python manage.py migrate && daphne -b 0.0.0.0 -p $PORT core.asgi:application
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
       - key: DATABASE_URL
         fromDatabase:
           name: icp-db
