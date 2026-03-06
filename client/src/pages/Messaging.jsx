@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
+import api, { WS_BASE_URL } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { MessageSquare, Send, Paperclip, MoreVertical, Search, Plus, Users, Hash, Reply, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -81,7 +81,7 @@ export default function Messaging() {
     useEffect(() => {
         if (selectedRoom) {
             const token = localStorage.getItem('token');
-            const s = new WebSocket(`ws://localhost:8000/ws/chat/${selectedRoom.id}/?token=${token}`);
+            const s = new WebSocket(`${WS_BASE_URL}/ws/chat/${selectedRoom.id}/?token=${token}`);
 
             s.onmessage = (e) => {
                 const data = JSON.parse(e.data);

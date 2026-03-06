@@ -15,7 +15,7 @@ import {
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
+import api, { WS_BASE_URL } from '../lib/api';
 import { formatDistanceToNow } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -53,7 +53,7 @@ export default function Layout() {
     useEffect(() => {
         if (user) {
             const token = localStorage.getItem('token');
-            const ws = new WebSocket(`ws://localhost:8000/ws/notifications/?token=${token}`);
+            const ws = new WebSocket(`${WS_BASE_URL}/ws/notifications/?token=${token}`);
 
             ws.onopen = () => console.log('Connected to notifications');
             ws.onclose = () => console.log('Disconnected from notifications');

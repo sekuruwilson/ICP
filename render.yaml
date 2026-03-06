@@ -1,0 +1,34 @@
+services:
+  # Backend service
+  - type: web
+    name: icp-backend
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && daphne -b 0.0.0.0 -p $PORT core.asgi:application
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: icp-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: icp-backend.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://icp-frontend.onrender.com
+
+  # Frontend service
+  - type: web
+    name: icp-frontend
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    publishPath: client/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://icp-backend.onrender.com/api/
+
+databases:
+  - name: icp-db
+    plan: free
