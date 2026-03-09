@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import User, Announcement, AnnouncementAttachment, ChatRoom, Message, MessageAttachment, Notification, Department, AnnouncementMedia
-from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
+from djoser.serializers import UserCreatePasswordRetypeSerializer as BaseUserCreateSerializer
 
 class AnnouncementMediaSerializer(serializers.ModelSerializer):
     uploaded_by = serializers.StringRelatedField(read_only=True)

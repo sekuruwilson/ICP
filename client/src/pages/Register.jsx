@@ -35,12 +35,18 @@ export default function Register() {
             });
             navigate('/login');
         } catch (err) {
+            console.error('Registration Error:', err);
             const data = err.response?.data;
             if (data) {
-                const firstError = Object.values(data)[0];
-                setError(Array.isArray(firstError) ? firstError[0] : 'Registration failed');
+                // Handle different Djoser error formats (string or object with arrays)
+                if (typeof data === 'string') {
+                    setError(data);
+                } else {
+                    const messages = Object.values(data).flat();
+                    setError(messages[0] || 'Registration failed');
+                }
             } else {
-                setError('Registration failed. Please try again.');
+                setError('Could not connect to server. Check your internet or backend URL.');
             }
         } finally {
             setLoading(false);

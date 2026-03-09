@@ -199,7 +199,8 @@ DJOSER = {
 
 # CORS
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')]
-CORS_ALLOW_ALL_ORIGINS = DEBUG # Only allow all in debug mode
+CORS_ALLOW_ALL_ORIGINS = True # Allow all for now to debug registration
 
 # CSRF
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')]
+CSRF_ALLOW_ALL_ORIGINS = True
