@@ -3,38 +3,42 @@ version: '3.8'
 services:
   db:
     image: postgres:15
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=icp_db
-      - POSTGRES_USER=icp_user
-      - POSTGRES_PASSWORD=icp_pass
+      - POSTGRES_DB=icp
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
 
   redis:
-    image: redis:7-alpine
+    image: redis:7
     ports:
       - "6379:6379"
 
   backend:
-    build: ./backend
-    command: python manage.py migrate && python manage.py seed_db && daphne -b 0.0.0.0 -p 8000 core.asgi:application
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgres://icp_user:icp_pass@db:5432/icp_db
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/icp
+      - REDIS_URL=redis://redis:6379
+      - DEBUG=True
+      - SECRET_KEY=local_secret_key
     depends_on:
       - db
       - redis
 
   frontend:
-    build: ./client
+    build:
+      context: ./client
+      dockerfile: Dockerfile # Assuming you have one, or use npm run dev
     ports:
-      - "80:80"
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/
     depends_on:
       - backend
-
-volumes:
-  postgres_data:
