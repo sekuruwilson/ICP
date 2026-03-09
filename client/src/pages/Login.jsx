@@ -99,6 +99,15 @@ export default function Login() {
                     </form>
 
                     <p className="text-center mt-8 text-xs text-slate-500">
+                        Need an account?{' '}
+                        <button
+                            onClick={() => navigate('/register')}
+                            className="text-primary-600 font-bold hover:underline bg-transparent border-none p-0"
+                        >
+                            Sign Up
+                        </button>
+                    </p>
+                    <p className="text-center mt-2 text-xs text-slate-500">
                         Forgot password? Contact your IT administrator.
                     </p>
                 </div>

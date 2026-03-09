@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     BarChart3,
@@ -63,7 +63,7 @@ export default function Layout() {
     }, [user]);
 
     if (!user) {
-        return <Outlet />;
+        return <Navigate to="/login" replace />;
     }
 
     const navItems = [
