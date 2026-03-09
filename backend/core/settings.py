@@ -203,4 +203,14 @@ CORS_ALLOW_ALL_ORIGINS = True # Allow all for now to debug registration
 
 # CSRF
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')]
-CSRF_ALLOW_ALL_ORIGINS = True
+# Render provides RENDER_EXTERNAL_HOSTNAME, let's always trust it for the admin panel
+if 'RENDER_EXTERNAL_HOSTNAME' in os.environ:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}")
+
+# Also add the hardcoded Render backend URL just in case
+if 'https://icp-backend-vn13.onrender.com' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('https://icp-backend-vn13.onrender.com')
+    
+# Add frontend URL to completely ensure it works
+if 'https://icp-frontend.onrender.com' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('https://icp-frontend.onrender.com')
