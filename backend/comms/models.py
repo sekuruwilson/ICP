@@ -29,7 +29,7 @@ class Department(models.Model):
     def __str__(self):
         return self.name
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 @receiver(post_save, sender=User)
@@ -43,6 +43,18 @@ def add_user_to_department_room(sender, instance, created, **kwargs):
         )
         if not room.members.filter(id=instance.id).exists():
             room.members.add(instance)
+
+@receiver(post_delete, sender=Department)
+def handle_department_deletion(sender, instance, **kwargs):
+    # 1. Delete the department chat room
+    from .models import ChatRoom
+    ChatRoom.objects.filter(
+        name=f"{instance.name} Department",
+        room_type='DEPARTMENT'
+    ).delete()
+
+    # 2. Deactivate employees in this department
+    User.objects.filter(department=instance.name).update(is_active=False)
 
 class Announcement(models.Model):
     title = models.CharField(max_length=255)
