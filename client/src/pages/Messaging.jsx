@@ -18,7 +18,9 @@ export default function Messaging() {
     const [roomSearchQuery, setRoomSearchQuery] = useState('');
     const [message, setMessage] = useState('');
     const [socket, setSocket] = useState(null);
+    const [typingUsers, setTypingUsers] = useState({}); // { userId: userName }
     const messagesEndRef = useRef(null);
+    const typingTimeoutRef = useRef({});
 
     // Mention state
     const [mentionQuery, setMentionQuery] = useState(null);
@@ -95,9 +97,24 @@ export default function Messaging() {
                             timestamp: data.timestamp
                         }];
                     });
-
-                    // Update rooms to reflect new message
                     queryClient.invalidateQueries({ queryKey: ['rooms'] });
+                    // Clear typing indicator for this user when they send a message
+                    setTypingUsers(prev => { const next = { ...prev }; delete next[data.sender_id]; return next; });
+                }
+                if (data.type === 'typing_indicator' && data.sender_id !== user.id) {
+                    if (data.is_typing) {
+                        // Show typing indicator
+                        setTypingUsers(prev => ({ ...prev, [data.sender_id]: data.sender_name }));
+                        // Auto-clear after 3 seconds (in case stop event is missed)
+                        clearTimeout(typingTimeoutRef.current[data.sender_id]);
+                        typingTimeoutRef.current[data.sender_id] = setTimeout(() => {
+                            setTypingUsers(prev => { const next = { ...prev }; delete next[data.sender_id]; return next; });
+                        }, 3000);
+                    } else {
+                        // Immediately clear
+                        clearTimeout(typingTimeoutRef.current[data.sender_id]);
+                        setTypingUsers(prev => { const next = { ...prev }; delete next[data.sender_id]; return next; });
+                    }
                 }
             };
 
@@ -123,6 +140,9 @@ export default function Messaging() {
         e.preventDefault();
         if (!message.trim() || !socket) return;
 
+        // Send stop typing signal first
+        socket.send(JSON.stringify({ type: 'typing', sender_id: user.id, sender_name: user.full_name, is_typing: false }));
+
         socket.send(JSON.stringify({
             message: message,
             sender_id: user.id
@@ -135,6 +155,11 @@ export default function Messaging() {
     const handleInputChange = (e) => {
         const val = e.target.value;
         setMessage(val);
+
+        // Send typing indicator over WebSocket
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'typing', sender_id: user.id, sender_name: user.full_name, is_typing: val.length > 0 }));
+        }
 
         const cursorPosition = e.target.selectionStart;
         const textBeforeCursor = val.slice(0, cursorPosition);
@@ -340,6 +365,29 @@ export default function Messaging() {
                                 })}
                                 <div ref={messagesEndRef} />
                             </div>
+
+                            {/* Typing Indicator */}
+                            <AnimatePresence>
+                                {Object.values(typingUsers).length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 6 }}
+                                        className="flex items-center gap-3 px-10 pb-2"
+                                    >
+                                        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-4 py-2.5 rounded-2xl rounded-bl-none">
+                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                                {Object.values(typingUsers).join(', ')} {Object.values(typingUsers).length === 1 ? 'is' : 'are'} typing
+                                            </span>
+                                            <span className="flex items-center gap-0.5 ml-1">
+                                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                            </span>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {/* Input */}
                             <form onSubmit={handleSend} className="p-8 pt-0 relative">

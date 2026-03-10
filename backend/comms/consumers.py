@@ -24,13 +24,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data['message']
-        sender_id = data['sender_id']
+        msg_type = data.get('type', 'message')
+        sender_id = data.get('sender_id')
 
-        # Save message to database
+        if msg_type == 'typing':
+            # Broadcast typing indicator to the room (excluding sender)
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'typing_indicator',
+                    'sender_id': sender_id,
+                    'sender_name': data.get('sender_name', 'Someone'),
+                    'is_typing': data.get('is_typing', True),
+                }
+            )
+            return
+
+        # Regular chat message
+        message = data['message']
         saved_msg = await self.save_message(sender_id, self.room_id, message)
 
-        # Send message to room group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -43,7 +56,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def chat_message(self, event):
-        # Send message to WebSocket
+        await self.send(text_data=json.dumps(event))
+
+    async def typing_indicator(self, event):
         await self.send(text_data=json.dumps(event))
 
     @database_sync_to_async
