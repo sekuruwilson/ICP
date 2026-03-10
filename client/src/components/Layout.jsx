@@ -86,8 +86,8 @@ export default function Layout() {
     return (
         <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden font-sans transition-colors duration-300">
             {/* Sidebar */}
-            <aside className="w-64 glass border-r h-full flex flex-col z-20 transition-all duration-300">
-                <div className="p-6">
+            <aside className="w-64 glass border-r h-full flex flex-col z-20 transition-all duration-300 overflow-y-auto">
+                <div className="p-6 shrink-0">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
                             <Megaphone size={24} />
@@ -139,7 +139,7 @@ export default function Layout() {
                     )}
                 </div>
 
-                <div className="mt-auto p-6 space-y-4">
+                <div className="mt-auto p-6 space-y-4 shrink-0">
                     <div
                         onClick={() => navigate('/settings')}
                         className="premium-card p-4 bg-slate-100 dark:bg-slate-900/50 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-transparent hover:border-primary-200 dark:hover:border-primary-900/30"
