@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { WS_BASE_URL } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { MessageSquare, Send, Paperclip, MoreVertical, Search, Plus, Users, Hash, Reply, X } from 'lucide-react';
+import { MessageSquare, Send, Paperclip, MoreVertical, Search, Plus, Users, Hash, Reply, X, Check, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { clsx } from 'clsx';
@@ -323,6 +323,15 @@ export default function Messaging() {
                                                         <p className="text-[10px] text-slate-400 font-medium">
                                                             {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })}
                                                         </p>
+                                                        {isMine && (
+                                                            <span title={msg.read_by?.length > 1 ? 'Seen' : 'Sent'}>
+                                                                {msg.read_by?.some(id => id !== user.id) ? (
+                                                                    <CheckCheck size={14} className="text-primary-400" />
+                                                                ) : (
+                                                                    <Check size={14} className="text-slate-400" />
+                                                                )}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
