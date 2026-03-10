@@ -198,44 +198,59 @@ export default function Announcements() {
                             {isLoading ? (
                                 [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-48 bg-slate-200 dark:bg-slate-800 rounded-[2rem] animate-pulse"></div>)
                             ) : filteredAnnouncements?.length > 0 ? (
-                                filteredAnnouncements.map((ann) => (
-                                    <motion.article
-                                        key={ann.id}
-                                        layoutId={`ann-${ann.id}`}
-                                        onClick={() => setSelectedAnnouncement(ann)}
-                                        className="premium-card p-6 group cursor-pointer hover:border-primary-500/50 transition-all flex flex-col justify-between"
-                                    >
-                                        <div className="relative">
-                                            {ann.is_pinned && (
-                                                <div className="absolute top-0 right-0">
-                                                    <Pin size={16} className="text-primary-600 fill-primary-600 rotate-45" />
-                                                </div>
+                                filteredAnnouncements.map((ann) => {
+                                    const isRead = ann.read_by?.includes(user?.id);
+                                    return (
+                                        <motion.article
+                                            key={ann.id}
+                                            layoutId={`ann-${ann.id}`}
+                                            onClick={() => setSelectedAnnouncement(ann)}
+                                            className={clsx(
+                                                "premium-card p-6 group cursor-pointer transition-all flex flex-col justify-between",
+                                                isRead ? "hover:border-slate-200" : "hover:border-primary-500/50 border-primary-200 dark:border-primary-900/40"
                                             )}
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 font-bold shrink-0">
-                                                    <Clock size={20} />
+                                        >
+                                            <div className="relative">
+                                                {ann.is_pinned && (
+                                                    <div className="absolute top-0 right-0">
+                                                        <Pin size={16} className="text-primary-600 fill-primary-600 rotate-45" />
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className={clsx(
+                                                        "w-10 h-10 rounded-xl flex items-center justify-center font-bold shrink-0 relative",
+                                                        isRead ? "bg-slate-100 dark:bg-slate-800 text-slate-400" : "bg-primary-50 dark:bg-primary-900/20 text-primary-600"
+                                                    )}>
+                                                        <Clock size={20} />
+                                                        {!isRead && (
+                                                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-white dark:border-slate-950" />
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest truncate">
+                                                            {ann.publish_date ? format(new Date(ann.publish_date), 'MMM dd, yyyy') : 'Unknown Date'}
+                                                        </p>
+                                                        <h3 className={clsx(
+                                                            "text-sm truncate group-hover:text-primary-600 transition-colors",
+                                                            isRead ? "font-medium text-slate-500" : "font-extrabold text-slate-900 dark:text-white"
+                                                        )}>{ann.title}</h3>
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest truncate">
-                                                        {ann.publish_date ? format(new Date(ann.publish_date), 'MMM dd, yyyy') : 'Unknown Date'}
-                                                    </p>
-                                                    <h3 className="font-bold text-sm truncate group-hover:text-primary-600 transition-colors">{ann.title}</h3>
+                                                <p className="text-slate-500 text-xs line-clamp-3 mb-4 leading-relaxed italic">
+                                                    {ann.content?.replace(/<[^>]*>/g, '') || 'No content preview available.'}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
+                                                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                                    <UserIcon size={12} /> {ann.created_by?.full_name?.split(' ')[0] || 'Admin'}
+                                                </div>
+                                                <div className="flex items-center gap-1 text-primary-600 text-[10px] font-black uppercase tracking-widest bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                                                    Read More <ChevronRight size={10} />
                                                 </div>
                                             </div>
-                                            <p className="text-slate-500 text-xs line-clamp-3 mb-4 leading-relaxed italic">
-                                                {ann.content?.replace(/<[^>]*>/g, '') || 'No content preview available.'}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
-                                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                                                <UserIcon size={12} /> {ann.created_by?.full_name?.split(' ')[0] || 'Admin'}
-                                            </div>
-                                            <div className="flex items-center gap-1 text-primary-600 text-[10px] font-black uppercase tracking-widest bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
-                                                Read More <ChevronRight size={10} />
-                                            </div>
-                                        </div>
-                                    </motion.article>
-                                ))
+                                        </motion.article>
+                                    );
+                                })
                             ) : (
                                 <div className="col-span-full py-20 text-center">
                                     <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -283,36 +298,47 @@ export default function Announcements() {
                             <div className="flex-1 overflow-y-auto space-y-2 pr-2 scrollbar-hide">
                                 {isLoading ? (
                                     [1, 2, 3].map(i => <div key={i} className="h-24 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse"></div>)
-                                ) : filteredAnnouncements?.map(ann => (
-                                    <div
-                                        key={ann.id}
-                                        onClick={() => setSelectedAnnouncement(ann)}
-                                        className={clsx(
-                                            "p-4 rounded-2xl cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden",
-                                            selectedAnnouncement?.id === ann.id
-                                                ? "bg-primary-600 text-white shadow-lg shadow-primary-600/30"
-                                                : "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800"
-                                        )}
-                                    >
-                                        {ann.is_pinned && (
-                                            <div className="absolute top-0 right-0 p-2">
-                                                <Pin size={12} className={clsx("rotate-45", selectedAnnouncement?.id === ann.id ? "text-white" : "text-primary-600")} />
+                                ) : filteredAnnouncements?.map(ann => {
+                                    const isRead = ann.read_by?.includes(user?.id);
+                                    return (
+                                        <div
+                                            key={ann.id}
+                                            onClick={() => setSelectedAnnouncement(ann)}
+                                            className={clsx(
+                                                "p-4 rounded-2xl cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden",
+                                                selectedAnnouncement?.id === ann.id
+                                                    ? "bg-primary-600 text-white shadow-lg shadow-primary-600/30"
+                                                    : isRead
+                                                        ? "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800"
+                                                        : "bg-primary-50/50 dark:bg-primary-950/20 hover:bg-primary-50 dark:hover:bg-primary-900/20 border border-primary-100 dark:border-primary-900/40"
+                                            )}
+                                        >
+                                            {ann.is_pinned && (
+                                                <div className="absolute top-0 right-0 p-2">
+                                                    <Pin size={12} className={clsx("rotate-45", selectedAnnouncement?.id === ann.id ? "text-white" : "text-primary-600")} />
+                                                </div>
+                                            )}
+                                            <div className={clsx(
+                                                "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 relative",
+                                                selectedAnnouncement?.id === ann.id ? "bg-white/20" : "bg-primary-100 dark:bg-primary-900/30 text-primary-600"
+                                            )}>
+                                                <Clock size={18} />
+                                                {!isRead && selectedAnnouncement?.id !== ann.id && (
+                                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-white dark:border-slate-950" />
+                                                )}
                                             </div>
-                                        )}
-                                        <div className={clsx(
-                                            "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0",
-                                            selectedAnnouncement?.id === ann.id ? "bg-white/20" : "bg-primary-100 dark:bg-primary-900/30 text-primary-600"
-                                        )}>
-                                            <Clock size={18} />
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className={clsx(
+                                                    "text-sm truncate mb-1",
+                                                    !isRead && selectedAnnouncement?.id !== ann.id ? "font-extrabold" : "font-bold"
+                                                )}>{ann.title}</h3>
+                                                <p className={clsx("text-[10px] font-black uppercase tracking-widest", selectedAnnouncement?.id === ann.id ? "text-white/70" : "text-slate-400")}>
+                                                    {ann.publish_date ? format(new Date(ann.publish_date), 'MMM dd, yyyy') : '--'}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-bold text-sm truncate mb-1">{ann.title}</h3>
-                                            <p className={clsx("text-[10px] font-black uppercase tracking-widest", selectedAnnouncement?.id === ann.id ? "text-white/70" : "text-slate-400")}>
-                                                {ann.publish_date ? format(new Date(ann.publish_date), 'MMM dd, yyyy') : '--'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
 
