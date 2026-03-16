@@ -90,3 +90,76 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def update_user_status(self, is_online):
         User.objects.filter(id=self.user_id).update(is_online=is_online)
+
+
+class CallConsumer(AsyncWebsocketConsumer):
+    """
+    WebRTC Signaling Consumer.
+    Relays offer/answer/ICE candidate messages between call participants.
+    Does NOT handle media — browsers connect peer-to-peer.
+    """
+
+    async def connect(self):
+        self.room_id = self.scope['url_route']['kwargs']['room_id']
+        self.call_group = f'call_{self.room_id}'
+        await self.channel_layer.group_add(self.call_group, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.call_group, self.channel_name)
+        # Notify others this participant left
+        if hasattr(self, '_user_id'):
+            await self.channel_layer.group_send(self.call_group, {
+                'type': 'call_signal',
+                'payload': {
+                    'type': 'call_leave',
+                    'userId': self._user_id,
+                    'userName': self._user_name,
+                }
+            })
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        msg_type = data.get('type')
+
+        # Track who this connection belongs to
+        if 'userId' in data:
+            self._user_id = data['userId']
+            self._user_name = data.get('userName', 'Unknown')
+
+        if msg_type == 'call_start' or msg_type == 'call_join':
+            # Broadcast to everyone in the call group
+            await self.channel_layer.group_send(self.call_group, {
+                'type': 'call_signal',
+                'payload': data,
+                'sender_channel': self.channel_name,
+            })
+
+        elif msg_type in ('webrtc_offer', 'webrtc_answer', 'ice_candidate'):
+            # These are targeted to a specific peer via their channel name
+            target_channel = data.get('targetChannel')
+            if target_channel:
+                await self.channel_layer.send(target_channel, {
+                    'type': 'call_signal',
+                    'payload': {**data, 'senderChannel': self.channel_name},
+                })
+            else:
+                # Broadcast to room if no specific target
+                await self.channel_layer.group_send(self.call_group, {
+                    'type': 'call_signal',
+                    'payload': {**data, 'senderChannel': self.channel_name},
+                    'sender_channel': self.channel_name,
+                })
+
+        elif msg_type == 'call_leave' or msg_type == 'call_end':
+            await self.channel_layer.group_send(self.call_group, {
+                'type': 'call_signal',
+                'payload': data,
+                'sender_channel': self.channel_name,
+            })
+
+    async def call_signal(self, event):
+        # Don't echo back to the sender
+        if event.get('sender_channel') == self.channel_name:
+            return
+        await self.send(text_data=json.dumps(event['payload']))

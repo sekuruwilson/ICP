@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { WS_BASE_URL } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { MessageSquare, Send, Paperclip, MoreVertical, Search, Plus, Users, Hash, Reply, X, Check, CheckCheck, FolderKanban } from 'lucide-react';
+import { MessageSquare, Send, Paperclip, MoreVertical, Search, Plus, Users, Hash, Reply, X, Check, CheckCheck, FolderKanban, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { clsx } from 'clsx';
 import { useLocation } from 'react-router-dom';
+import CallModal from '../components/CallModal';
 
 export default function Messaging() {
     const { user } = useAuth();
@@ -18,7 +19,10 @@ export default function Messaging() {
     const [roomSearchQuery, setRoomSearchQuery] = useState('');
     const [message, setMessage] = useState('');
     const [socket, setSocket] = useState(null);
-    const [typingUsers, setTypingUsers] = useState({}); // { userId: userName }
+    const [typingUsers, setTypingUsers] = useState({});
+    // Call state
+    const [isCallOpen, setIsCallOpen] = useState(false);
+    const [incomingCall, setIncomingCall] = useState(null); // { roomId, callerName }
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef({});
 
@@ -296,6 +300,13 @@ export default function Messaging() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setIsCallOpen(true)}
+                                        title="Start Call"
+                                        className="p-2 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition-colors"
+                                    >
+                                        <Phone size={20} />
+                                    </button>
                                     <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
                                         <Search size={20} />
                                     </button>
@@ -467,7 +478,49 @@ export default function Messaging() {
                 </div>
             </div>
 
-            {/* New Chat Modal - Outside of animated container for absolute stacking */}
+            {/* ── Incoming Call Banner ── */}
+            <AnimatePresence>
+                {incomingCall && !isCallOpen && (
+                    <motion.div
+                        initial={{ y: -80, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -80, opacity: 0 }}
+                        className="fixed top-6 left-1/2 -translate-x-1/2 z-[150] bg-slate-900 border border-emerald-500/30 text-white rounded-3xl shadow-2xl px-8 py-5 flex items-center gap-6 min-w-[340px]"
+                    >
+                        <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center animate-pulse">
+                            <Phone size={22} className="text-emerald-400" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-black text-base">{incomingCall.callerName} started a call</p>
+                            <p className="text-xs text-slate-400">{selectedRoom?.name}</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => { setIsCallOpen(true); setIncomingCall(null); }}
+                                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl text-sm transition-colors"
+                            >
+                                Join
+                            </button>
+                            <button
+                                onClick={() => setIncomingCall(null)}
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-2xl text-sm transition-colors"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── Call Modal ── */}
+            <CallModal
+                room={selectedRoom}
+                user={user}
+                isOpen={isCallOpen}
+                onEnd={() => setIsCallOpen(false)}
+            />
+
+            {/* New Chat Modal */}
             <AnimatePresence mode="wait">
                 {isNewChatModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">
