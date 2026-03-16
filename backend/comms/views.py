@@ -2,11 +2,11 @@ from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
-from .models import Announcement, ChatRoom, Message, Notification, User, Department, AnnouncementAttachment, AnnouncementMedia
+from .models import Announcement, ChatRoom, Message, Notification, User, Department, AnnouncementAttachment, AnnouncementMedia, Project
 from .serializers import (
     AnnouncementSerializer, ChatRoomSerializer, 
     MessageSerializer, NotificationSerializer, UserSerializer,
-    DepartmentSerializer, AnnouncementMediaSerializer
+    DepartmentSerializer, AnnouncementMediaSerializer, ProjectSerializer
 )
 
 class DepartmentViewSet(viewsets.ModelViewSet):
@@ -184,3 +184,36 @@ class AnnouncementMediaViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         media = serializer.save(uploaded_by=self.request.user)
+
+class ProjectViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == User.Role.SUPER_ADMIN:
+            return Project.objects.all().order_by('-created_at')
+        # Users can see projects they created or are members of
+        return Project.objects.filter(
+            Q(created_by=user) | Q(members=user)
+        ).distinct().order_by('-created_at')
+
+    def check_permissions(self, request):
+        super().check_permissions(request)
+        # For simplicity, anyone can create projects (or restrict to ADMIN/MANAGER if needed later)
+        if self.action in ['update', 'partial_update', 'destroy']:
+            project = self.get_object()
+            if request.user != project.created_by and request.user.role != User.Role.SUPER_ADMIN:
+                self.permission_denied(request, message="Only the project creator or a Super Admin can modify it.")
+
+    @action(detail=True, methods=['post'])
+    def update_members(self, request, pk=None):
+        project = self.get_object()
+        if request.user != project.created_by and request.user.role != User.Role.SUPER_ADMIN:
+            return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        member_ids = request.data.get('member_ids', [])
+        users = User.objects.filter(id__in=member_ids)
+        project.members.set(users)
+        
+        return Response(ProjectSerializer(project).data)

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { WS_BASE_URL } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { MessageSquare, Send, Paperclip, MoreVertical, Search, Plus, Users, Hash, Reply, X, Check, CheckCheck } from 'lucide-react';
+import { MessageSquare, Send, Paperclip, MoreVertical, Search, Plus, Users, Hash, Reply, X, Check, CheckCheck, FolderKanban } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { clsx } from 'clsx';
@@ -249,7 +249,8 @@ export default function Messaging() {
                                 )}>
                                     {room.room_type === 'GROUP' ? <Hash size={20} /> :
                                         room.room_type === 'DEPARTMENT' ? <Users size={20} /> :
-                                            room.name?.charAt(0) || <MessageSquare size={18} />}
+                                            room.room_type === 'PROJECT' ? <FolderKanban size={20} /> :
+                                                room.name?.charAt(0) || <MessageSquare size={18} />}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-0.5">
@@ -257,6 +258,9 @@ export default function Messaging() {
                                             {room.name || 'Direct Message'}
                                             {room.room_type === 'DEPARTMENT' && (
                                                 <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 text-[8px] font-black uppercase rounded">Dept</span>
+                                            )}
+                                            {room.room_type === 'PROJECT' && (
+                                                <span className="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-600 text-[8px] font-black uppercase rounded">Proj</span>
                                             )}
                                         </span>
                                         <span className={clsx("text-[10px]", selectedRoom?.id === room.id ? "text-white/70" : "text-slate-400")}>
@@ -280,7 +284,8 @@ export default function Messaging() {
                             <div className="px-8 py-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 font-bold shrink-0">
-                                        {selectedRoom.name?.charAt(0) || <Hash size={20} />}
+                                        {selectedRoom.room_type === 'PROJECT' ? <FolderKanban size={20} /> : 
+                                            selectedRoom.name?.charAt(0) || <Hash size={20} />}
                                     </div>
                                     <div>
                                         <h2 className="font-black text-lg">{selectedRoom.name || 'Conversation'}</h2>

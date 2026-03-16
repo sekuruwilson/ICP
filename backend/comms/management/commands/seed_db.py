@@ -9,14 +9,14 @@ class Command(BaseCommand):
         self.stdout.write('Seeding data...')
         
         # Helper function for user creation
-        def create_user(username, email, full_name, role, department):
+        def create_user(username, email, full_name, role, department_name):
             user, created = User.objects.get_or_create(
                 username=username,
                 defaults={
                     'email': email,
                     'full_name': full_name,
                     'role': role,
-                    'department': department
+                    'department': department_name
                 }
             )
             if created:

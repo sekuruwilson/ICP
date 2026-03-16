@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Announcement, AnnouncementAttachment, ChatRoom, Message, MessageAttachment, Notification, Department, AnnouncementMedia
+from .models import User, Announcement, AnnouncementAttachment, ChatRoom, Message, MessageAttachment, Notification, Department, AnnouncementMedia, Project
 from djoser.serializers import UserCreatePasswordRetypeSerializer as BaseUserCreateSerializer
 
 class AnnouncementMediaSerializer(serializers.ModelSerializer):
@@ -99,3 +99,32 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = '__all__'
+
+class ProjectSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+    members = UserSerializer(many=True, read_only=True)
+    member_ids = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), 
+        source='members', 
+        write_only=True, 
+        many=True,
+        required=False
+    )
+    chat_room = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Project
+        fields = ('id', 'name', 'description', 'created_by', 'members', 'member_ids', 'chat_room', 'created_at', 'updated_at')
+
+    def create(self, validated_data):
+        members = validated_data.pop('members', [])
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            validated_data['created_by'] = request.user
+            
+        project = Project.objects.create(**validated_data)
+        
+        if members:
+            project.members.set(members)
+            
+        return project

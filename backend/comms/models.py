@@ -53,8 +53,9 @@ def handle_department_deletion(sender, instance, **kwargs):
         room_type='DEPARTMENT'
     ).delete()
 
-    # 2. Deactivate employees in this department
-    User.objects.filter(department=instance.name).update(is_active=False)
+    # 2. Delete all users in this department
+    # As requested by the user: "when the department is deleted also delete the associated users"
+    User.objects.filter(department=instance.name).delete()
 
 class Announcement(models.Model):
     title = models.CharField(max_length=255)
@@ -90,6 +91,7 @@ class ChatRoom(models.Model):
         DIRECT = 'DIRECT', _('Direct Message')
         GROUP = 'GROUP', _('Group Chat')
         DEPARTMENT = 'DEPARTMENT', _('Department Chat')
+        PROJECT = 'PROJECT', _('Project Chat')
 
     name = models.CharField(max_length=255, blank=True)
     room_type = models.CharField(max_length=20, choices=RoomType.choices, default=RoomType.DIRECT)
@@ -124,3 +126,47 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class Project(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_projects')
+    members = models.ManyToManyField(User, related_name='projects')
+    chat_room = models.OneToOneField(ChatRoom, on_delete=models.SET_NULL, null=True, blank=True, related_name='project')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+@receiver(post_save, sender=Project)
+def create_project_chat_room(sender, instance, created, **kwargs):
+    if created and not instance.chat_room:
+        room = ChatRoom.objects.create(
+            name=f"{instance.name} Project",
+            room_type='PROJECT'
+        )
+        instance.chat_room = room
+        instance.save()
+        # Ensure the creator is a member of the project
+        instance.members.add(instance.created_by)
+
+from django.db.models.signals import m2m_changed
+
+@receiver(m2m_changed, sender=Project.members.through)
+def update_project_chat_room_members(sender, instance, action, pk_set, **kwargs):
+    if instance.chat_room:
+        if action == "post_add":
+            users_to_add = User.objects.filter(pk__in=pk_set)
+            instance.chat_room.members.add(*users_to_add)
+        elif action in ["post_remove", "post_clear"]:
+            if action == "post_remove":
+                users_to_remove = User.objects.filter(pk__in=pk_set)
+                instance.chat_room.members.remove(*users_to_remove)
+            elif action == "post_clear":
+                instance.chat_room.members.clear()
+
+@receiver(post_delete, sender=Project)
+def handle_project_deletion(sender, instance, **kwargs):
+    if instance.chat_room:
+        instance.chat_room.delete()
