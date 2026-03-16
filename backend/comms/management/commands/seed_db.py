@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from comms.models import User, Announcement, ChatRoom, Message, Department
+from comms.models import User, Announcement, ChatRoom, Message, Department, Project
 from django.utils import timezone
 
 class Command(BaseCommand):
@@ -85,5 +85,20 @@ class Command(BaseCommand):
         if not project_room.messages.exists():
             Message.objects.create(room=project_room, sender=admin, content="Team, let's start the platinum initiative.")
             Message.objects.create(room=project_room, sender=staff1, content="Agreed! I'll start on the specs.")
+
+        # Create a sample Project (which auto-creates a ChatRoom via signal)
+        project, created = Project.objects.get_or_create(
+            name='Q1 Institutional Expansion',
+            defaults={
+                'description': 'Strategic planning for new regional centers and infrastructure upgrades.',
+                'created_by': admin
+            }
+        )
+        if created:
+            project.members.add(admin, manager, staff1, staff2)
+            # Find the auto-created chat room
+            if project.chat_room:
+                Message.objects.create(room=project.chat_room, sender=admin, content="Welcome everyone to the Expansion project room.")
+                Message.objects.create(room=project.chat_room, sender=manager, content="Thanks Sarah. I've uploaded the initial budget plans.")
 
         self.stdout.write(self.style.SUCCESS('Successfully seeded database'))
