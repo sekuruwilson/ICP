@@ -120,6 +120,13 @@ export default function Messaging() {
                         setTypingUsers(prev => { const next = { ...prev }; delete next[data.sender_id]; return next; });
                     }
                 }
+                if (data.type === 'call_invitation' && data.sender_id !== user.id) {
+                    setIncomingCall({
+                        roomId: data.room_id,
+                        callerName: data.sender_name,
+                        callerId: data.sender_id
+                    });
+                }
             };
 
             setSocket(s);
@@ -148,12 +155,23 @@ export default function Messaging() {
         socket.send(JSON.stringify({ type: 'typing', sender_id: user.id, sender_name: user.full_name, is_typing: false }));
 
         socket.send(JSON.stringify({
+            type: 'message',
             message: message,
             sender_id: user.id
         }));
 
         setMessage('');
         setMentionQuery(null);
+    };
+
+    const handleStartCall = () => {
+        if (!socket) return;
+        socket.send(JSON.stringify({
+            type: 'call_invite',
+            sender_id: user.id,
+            sender_name: user.full_name
+        }));
+        setIsCallOpen(true);
     };
 
     const handleInputChange = (e) => {
@@ -301,7 +319,7 @@ export default function Messaging() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
-                                        onClick={() => setIsCallOpen(true)}
+                                        onClick={handleStartCall}
                                         title="Start Call"
                                         className="p-2 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition-colors"
                                     >

@@ -40,6 +40,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
             return
 
+        if msg_type == 'call_invite':
+            # Broadcast call invitation to the room
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'call_invitation',
+                    'sender_id': sender_id,
+                    'sender_name': data.get('sender_name', 'Someone'),
+                    'room_id': self.room_id,
+                }
+            )
+            return
+
         # Regular chat message
         message = data['message']
         saved_msg = await self.save_message(sender_id, self.room_id, message)
@@ -59,6 +72,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(event))
 
     async def typing_indicator(self, event):
+        await self.send(text_data=json.dumps(event))
+
+    async def call_invitation(self, event):
         await self.send(text_data=json.dumps(event))
 
     @database_sync_to_async
